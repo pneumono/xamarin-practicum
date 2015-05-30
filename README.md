@@ -1,9 +1,9 @@
 # xamarin-practicum
 Simple automated deployment script of a PayPal REST API demo app on both CentOS 7 and Ubuntu 14.04.2 LTS.
 
-This script assumes the following environment under CentOS 7:
- - Clean, minimal install (image used in testing was CentOS-7-x86_64-DVD-1503-01.iso)
- - Only package assumed to be install on top of the base system is git (to download this in the first place)
- - User is local, or on one of the trusted subnets (10.0.0.0/8, 172.0.0.0/8, 192.168.0.0/16)
+This script assumes that the machine is running either:
+ - CentOS 7
+ - Ubuntu 14.04.2 LTS
+and that only git is installed on top of the base system (though if the script isn't being deployed from git this is unnecessary). All other dependencies required for deployment will be installed. MySQL root password will be printed at the end of the install.
 
-This script will be updated for Ubuntu 14.04.2 LTS shortly.
+Simply run ./deploy.sh, and the script will detect the OS and set everything up.

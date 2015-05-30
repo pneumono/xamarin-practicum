@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if grep -q "CentOS Linux release 7" /etc/redhat-release; then
+if [ -e /etc/redhat-release ] && grep -q "CentOS Linux release 7" /etc/redhat-release; then
   yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
   systemctl enable mariadb.service
