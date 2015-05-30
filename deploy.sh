@@ -12,9 +12,7 @@ if [ -e /etc/redhat-release ] && grep -q "CentOS Linux release 7" /etc/redhat-re
   mv composer.phar /usr/local/bin/composer
 
   cd /var/www/html/
-  git clone https://github.com/paypal/rest-api-sample-app-php.git
-  mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
-  rm -rf rest-api-sample-app-php
+  git clone https://github.com/paypal/rest-api-sample-app-php.git .
   chown -R www-data:www-data .
 
   composer update
@@ -73,9 +71,7 @@ elif grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   mv composer.phar /usr/local/bin/composer
 
   cd /var/www/html/
-  git clone https://github.com/paypal/rest-api-sample-app-php.git
-  mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
-  rm -rf rest-api-sample-app-php
+  git clone https://github.com/paypal/rest-api-sample-app-php.git .
   rm index.html # because ubuntu leaves this here
   chown -R www-data:www-data .
 
