@@ -1,5 +1,7 @@
 yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
+run_directory=$(pwd)
+
 systemctl enable mariadb.service
 systemctl start mariadb.service
 
@@ -12,13 +14,13 @@ git clone https://github.com/paypal/rest-api-sample-app-php.git
 cd rest-api-sample-app-php
 composer update
 
-mysql_root_password=$(cat /dev/urandom | tr -d head -c${1:-16})
-mysql_paypaluser_password=$(cat /dev/urandom | tr -d head -c${1:-16})
+mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
 printf "mysql root password is: $mysql_root_password\n"
 printf "mysql application user password is: $mysql_paypaluser_password\n"
 
-./expect-centos7 "$mysql_root_password"
+$run_directory/expect-centos7 "$mysql_root_password"
 
 mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
 
