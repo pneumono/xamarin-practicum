@@ -13,9 +13,9 @@ if [ -e /etc/redhat-release ] && grep -q "CentOS Linux release 7" /etc/redhat-re
 
   cd /var/www/html/
   git clone https://github.com/paypal/rest-api-sample-app-php.git .
-  chown -R www-data:www-data .
+  chown -R apache:apache
 
-  composer update
+  COMPOSER_HOME=/var/www/html/.composer composer update
 
   mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
   export mysql_root_password # because expect requires variables to be global
