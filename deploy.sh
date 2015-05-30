@@ -55,7 +55,6 @@ if [ -e /etc/redhat-release ] && grep -q "CentOS Linux release 7" /etc/redhat-re
   firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
   firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
   firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
-  firewall-cmd --permanent --zone=trusted --add-source=66.189.91.26 # just for testing so i don't get booted
   firewall-cmd --permanent --zone=trusted --add-service ssh
   firewall-cmd --reload
 
@@ -94,7 +93,6 @@ elif grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   iptables -A INPUT -m tcp -p tcp --src 10.0.0.0/8 --dport 22 -j ACCEPT
   iptables -A INPUT -m tcp -p tcp --src 172.0.0.0/8 --dport 22 -j ACCEPT
   iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --src 66.189.91.26 --dport 22 -j ACCEPT
   iptables -P INPUT DROP
   iptables-save
 
