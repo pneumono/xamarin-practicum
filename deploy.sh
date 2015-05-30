@@ -1,0 +1,102 @@
+#!/bin/bash
+
+if [ -e /etc/redhat-release ] && [ $(cat /etc/redhat-release) == "CentOS Linux release 7"* ]; then
+  yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
+
+  systemctl enable mariadb.service
+  systemctl start mariadb.service
+  systemctl enable httpd.service
+  systemctl start httpd.service
+
+  curl -sS https://getcomposer.org/installer | php
+  mv composer.phar /usr/local/bin/composer
+
+  cd /var/www/html/
+  git clone https://github.com/paypal/rest-api-sample-app-php.git
+  mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
+  rm -rf rest-api-sample-app-php
+  chown -R www-data:www-data .
+
+  composer update
+
+  mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+  export mysql_root_password # because expect requires variables to be global
+  mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+
+  /usr/bin/expect -c '
+  set timeout 1
+
+  spawn mysql_secure_installation
+  expect "Enter current password for root (enter for none): "
+  send "\r"
+  expect "Change the root password? \[Y/n\] "
+  send "Y\r"
+  expect "New password: "
+  send "$env(mysql_root_password)\r"
+  expect "Re-enter new password: "
+  send "$env(mysql_root_password)\r"
+  expect "Remove anonymous users? \[Y/n\] "
+  send "Y\r"
+  expect "Disallow root login remotely? \[Y/n\] "
+  send "Y\r"
+  expect "Remove test database and access to it? \[Y/n\] "
+  send "Y\r"
+  expect "Reload privilege tables now? \[Y/n\] "
+  send "Y\r" '
+
+  mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
+  mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
+  mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
+
+  sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
+
+  firewall-cmd --zone=public --add-service=http --permanent
+  firewall-cmd --zone=public --add-service=https --permanent
+  firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
+  firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
+  firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
+  firewall-cmd --permanent --zone=trusted --add-source=66.189.91.26 # just for testing so i don't get booted
+  firewall-cmd --permanent --zone=trusted --add-service ssh
+  firewall-cmd --reload
+
+  printf "mysql root password is: $mysql_root_password\n"
+  printf "mysql application password is: $mysql_paypaluser_password\n"
+  unset mysql_root_password # so this isn't just hanging around in the terminal session
+elif [ -e /etc/issue ] && [ $(cat /etc/issue) == "Ubuntu 14.04.2 LTS"* ]; then
+  mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+  mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+
+  echo "mysql-server mysql-server/root_password select $mysql_root_password" | debconf-set-selections
+  echo "mysql-server mysql-server/root_password_again select $mysql_root_password" | debconf-set-selections
+  aptitude install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect
+
+  curl -sS https://getcomposer.org/installer | php
+  mv composer.phar /usr/local/bin/composer
+
+  cd /var/www/html/
+  git clone https://github.com/paypal/rest-api-sample-app-php.git
+  mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
+  rm -rf rest-api-sample-app-php
+  rm index.html # because ubuntu leaves this here
+  chown -R www-data:www-data .
+
+  composer update
+
+  mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
+  mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
+  mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
+
+  sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
+
+  iptables -A INPUT -m icmp -p icmp --icmp-type any -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --dport 443 -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --src 10.0.0.0/8 --dport 22 -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --src 172.0.0.0/8 --dport 22 -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
+  iptables -A INPUT -m tcp -p tcp --src 66.189.91.26 --dport 22 -j ACCEPT
+  iptables -P INPUT DROP
+
+  printf "mysql root password is: $mysql_root_password\n"
+  printf "mysql application password is: $mysql_paypaluser_password\n"
+fi
