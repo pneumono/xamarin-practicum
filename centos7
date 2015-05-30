@@ -31,8 +31,8 @@ mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
 printf "Setting up MySQL\n"
 /usr/bin/expect -c '
-set timeout 2
-set log_user 0
+set timeout 1
+log_user 0
 
 log_user 0 # hide output, add option for -v?
 spawn mysql_secure_installation
