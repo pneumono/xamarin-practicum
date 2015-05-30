@@ -20,9 +20,6 @@ mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 export mysql_root_password
 mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
-printf "mysql root password is: $mysql_root_password\n"
-printf "mysql application user password is: $mysql_paypaluser_password\n"
-
 /usr/bin/expect -c '
 set timeout 2
 
@@ -51,5 +48,13 @@ mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_a
 
 mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
 
+sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/rest-api-sample-app-php/app/bootstrap.php
+
+printf Setting firewall rules:\n
 firewall-cmd --zone=public --add-service=http --permanent
+firewall-cmd --zone=public --add-service=https --permanent
+printf Reloading firewall:
 firewall-cmd --reload
+
+printf "mysql root password is: $mysql_root_password\n"
+printf "mysql application user password is: $mysql_paypaluser_password\n"
