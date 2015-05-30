@@ -50,6 +50,7 @@ if [ -e /etc/redhat-release ] && grep -q "CentOS Linux release 7" /etc/redhat-re
 
   firewall-cmd --zone=public --add-service=http --permanent
   firewall-cmd --zone=public --add-service=https --permanent
+  firewall-cmd --zone=public --remove-service=ssh --permanent
   firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
   firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
   firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
@@ -74,7 +75,7 @@ elif [ -e /etc/issue ] && grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   rm index.html # because ubuntu leaves this here
   chown -R www-data:www-data .
 
-  composer update
+  COMPOSER_HOME=/var/www/html/.compose composer update
 
   mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
   mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
