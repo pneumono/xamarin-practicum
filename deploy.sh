@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -e /etc/redhat-release ] && [ $(cat /etc/redhat-release) == "CentOS Linux release 7"* ]; then
+if grep -q "CentOS Linux release 7" /etc/redhat-release; then
   yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
   systemctl enable mariadb.service
@@ -62,7 +62,7 @@ if [ -e /etc/redhat-release ] && [ $(cat /etc/redhat-release) == "CentOS Linux r
   printf "mysql root password is: $mysql_root_password\n"
   printf "mysql application password is: $mysql_paypaluser_password\n"
   unset mysql_root_password # so this isn't just hanging around in the terminal session
-elif [ -e /etc/issue ] && [ $(cat /etc/issue) == "Ubuntu 14.04.2 LTS"* ]; then
+elif grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
   mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
@@ -99,4 +99,6 @@ elif [ -e /etc/issue ] && [ $(cat /etc/issue) == "Ubuntu 14.04.2 LTS"* ]; then
 
   printf "mysql root password is: $mysql_root_password\n"
   printf "mysql application password is: $mysql_paypaluser_password\n"
+else
+  printf "This distribution is not supported by this script.\n"
 fi
