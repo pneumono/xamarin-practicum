@@ -1,0 +1,41 @@
+#!/bin/bash
+
+{
+mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+
+echo "mysql-server mysql-server/root_password select $mysql_root_password" | debconf-set-selections
+echo "mysql-server mysql-server/root_password_again select $mysql_root_password" | debconf-set-selections
+aptitude install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect
+
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+cd /var/www/html/
+git clone https://github.com/paypal/rest-api-sample-app-php.git
+mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
+rm -rf rest-api-sample-app-php
+rm index.html # because ubuntu leaves this here
+chown -R www-data:www-data .
+
+composer update
+
+mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
+mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
+mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
+
+sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
+
+iptables -A INPUT -m icmp -p icmp --icmp-type any -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --dport 443 -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --src 10.0.0.0/8 --dport 22 -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --src 172.0.0.0/8 --dport 22 -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
+iptables -A INPUT -m tcp -p tcp --src 66.189.91.26 --dport 22 -j ACCEPT
+iptables -P INPUT DROP
+
+printf "mysql root password is: $mysql_root_password\n"
+printf "mysql application password is: $mysql_paypaluser_password\n"
+printf "\nOutput has been saved to deploy.log.\n"
+} | tee deploy.log
