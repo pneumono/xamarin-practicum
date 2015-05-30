@@ -1,37 +1,38 @@
 #!/bin/bash
 
 {
-printf "\e[0;34mInstalling required packages\e[0m\n"
+printf "Installing required packages\n"
 yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
-printf "\e[0;34mEnabling MySQL\e[0m\n"
+printf "Enabling MySQL\n"
 systemctl enable mariadb.service
 systemctl start mariadb.service
-printf "\e[0;34mEnabling apache2\e[0m\n"
+printf "Enabling apache2\n"
 systemctl enable httpd.service
 systemctl start httpd.service
 
-printf "\e[0;34mInstalling composer\e[0m\n"
+printf "Installing composer\n"
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 
-printf "\e[0;34mDownloading paypal sample app\e[0m\n"
+printf "Downloading paypal sample app\n"
 cd /var/www/html/
 git clone https://github.com/paypal/rest-api-sample-app-php.git
 mv rest-api-sample-app-php/* ./ # assuming this should be the root of the webserver
 rm -rf rest-api-sample-app-php
 
-printf "\e[0;34mRunning composer update\e[0m\n"
+printf "Running composer update\n"
 composer update
 
-printf "\e[0;34mGenerating MySQL passwords\e[0m\n"
+printf "Generating MySQL passwords\n"
 mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 export mysql_root_password # because expect requires variables to be global
 mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
-printf "\e[0;34mSetting up MySQL\e[0m\n"
+printf "Setting up MySQL\n"
 /usr/bin/expect -c '
 set timeout 2
+set log_user 0
 
 log_user 0 # hide output, add option for -v?
 spawn mysql_secure_installation
@@ -56,25 +57,25 @@ mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
 mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
 mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
 
-printf "\n\e[0;34mSetting MySQL login details within app config\e[0m\n"
+printf "\nSetting MySQL login details within app config\n"
 sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
 
-printf "\e[0;34mSetting firewall rules\e[0m\n"
-printf "\e[0;34mallow http traffic:\e[0m "
+printf "Setting firewall rules\n"
+printf "allow http traffic: "
 firewall-cmd --zone=public --add-service=http --permanent
-printf "\e[0;34mallow https traffic:\e[0m "
+printf "allow https traffic: "
 firewall-cmd --zone=public --add-service=https --permanent
-printf "\e[0;34mallowing SSH from trusted subnets\e[0m\n"
+printf "allowing SSH from trusted subnets\n"
 firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
 firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
 firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
 firewall-cmd --permanent --zone=trusted --add-source=66.189.91.26 # just for testing so i don't get booted
 firewall-cmd --permanent --zone=trusted --add-service ssh
-printf "\e[0;34mReloading firewall:\e[0m "
+printf "Reloading firewall: "
 firewall-cmd --reload
 
-printf "\e[0;34mmysql root password is: $mysql_root_password\e[0m\n"
-printf "\e[0;34mmysql application password is: $mysql_paypaluser_password\e[0m\n"
-
+printf "mysql root password is: $mysql_root_password\n"
+printf "mysql application password is: $mysql_paypaluser_password\n"
+printf "\nOutput has been saved to deploy.log.\n"
 unset mysql_root_password # so this isn't just hanging around in the terminal session
-} | tee setup.log
+} | tee deploy.log
