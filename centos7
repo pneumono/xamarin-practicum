@@ -56,19 +56,25 @@ mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
 mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
 mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
 
-printf "\e[0;34mSetting MySQL login details within app config\e[0m\n"
+printf "\n\e[0;34mSetting MySQL login details within app config\e[0m\n"
 sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
 
 printf "\e[0;34mSetting firewall rules\e[0m\n"
-printf "\e[0;34mallow http traffic: "
+printf "\e[0;34mallow http traffic:\e[0m "
 firewall-cmd --zone=public --add-service=http --permanent
-printf "\e[0;34mallow https traffic: "
+printf "\e[0;34mallow https traffic:\e[0m "
 firewall-cmd --zone=public --add-service=https --permanent
-printf "\e[0;34mReloading firewall: "
+printf "\e[0;34mallowing SSH from trusted subnets\e[0m\n"
+firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
+firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
+firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
+firewall-cmd --permanent --zone=trusted --add-source=66.189.91.26 # just for testing so i don't get booted
+firewall-cmd --permanent --zone=trusted --add-service ssh
+printf "\e[0;34mReloading firewall:\e[0m "
 firewall-cmd --reload
 
 printf "\e[0;34mmysql root password is: $mysql_root_password\e[0m\n"
-printf "\e[0;34mmysql application user password is: $mysql_paypaluser_password\e[0m\n"
+printf "\e[0;34mmysql application password is: $mysql_paypaluser_password\e[0m\n"
 
 unset mysql_root_password # so this isn't just hanging around in the terminal session
-} | tee setup.log 
+} | tee setup.log
