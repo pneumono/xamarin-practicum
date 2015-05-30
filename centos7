@@ -15,6 +15,7 @@ cd rest-api-sample-app-php
 composer update
 
 mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+export mysql_root_password
 mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
 printf "mysql root password is: $mysql_root_password\n"
