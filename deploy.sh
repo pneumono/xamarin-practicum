@@ -68,7 +68,7 @@ elif grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
 
   echo "mysql-server mysql-server/root_password select $mysql_root_password" | debconf-set-selections
   echo "mysql-server mysql-server/root_password_again select $mysql_root_password" | debconf-set-selections
-  aptitude install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect
+  apt-get install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect
 
   curl -sS https://getcomposer.org/installer | php
   mv composer.phar /usr/local/bin/composer
@@ -96,6 +96,7 @@ elif grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
   iptables -A INPUT -m tcp -p tcp --src 66.189.91.26 --dport 22 -j ACCEPT
   iptables -P INPUT DROP
+  iptables-save
 
   printf "mysql root password is: $mysql_root_password\n"
   printf "mysql application password is: $mysql_paypaluser_password\n"
