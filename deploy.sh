@@ -71,8 +71,8 @@ elif [ -e /etc/issue ] && grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   mv composer.phar /usr/local/bin/composer
 
   cd /var/www/html/
+  rm * # ubuntu leaves some stuff in here
   git clone https://github.com/paypal/rest-api-sample-app-php.git .
-  rm index.html # because ubuntu leaves this here
   chown -R www-data:www-data .
 
   COMPOSER_HOME=/var/www/html/.compose composer update
