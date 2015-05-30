@@ -20,9 +20,8 @@ mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 printf "mysql root password is: $mysql_root_password\n"
 printf "mysql application user password is: $mysql_paypaluser_password\n"
 
-/usr/bin/expect $mysql_root_password -c '
+/usr/bin/expect -c '
 set timeout 2
-set arg1 [lindex $argv 0]
 
 log_user 0 # hide output, add option for -v?
 spawn mysql_secure_installation
@@ -31,9 +30,9 @@ send "\r"
 expect "Change the root password? \[Y/n\] "
 send "Y\r"
 expect "New password: "
-send "$arg1\r"
+send "$env(mysql_root_password)\r"
 expect "Re-enter new password: "
-send "$arg1\r"
+send "$env(mysql_root_password)\r"
 expect "Remove anonymous users? \[Y/n\] "
 send "Y\r"
 expect "Disallow root login remotely? \[Y/n\] "
