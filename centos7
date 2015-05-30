@@ -1,25 +1,31 @@
+printf "Installing required packages\n"
 yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
-run_directory=$(pwd)
-
+printf "Enabling MySQL\n"
 systemctl enable mariadb.service
 systemctl start mariadb.service
+printf "Enabling apache2\n"
 systemctl enable httpd.service
 systemctl start httpd.service
 
+printf "Installing composer\n"
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 
+printf "Downloading paypal sample app\n"
 cd /var/www/html/ # assuming this is where we're storing stuff
 git clone https://github.com/paypal/rest-api-sample-app-php.git
 
+printf "Running composer update\n"
 cd rest-api-sample-app-php
 composer update
 
+printf "Generating MySQL passwords\n"
 mysql_root_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-export mysql_root_password
+export mysql_root_password # because expect is silly
 mysql_paypaluser_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
+printf "Setting up MySQL\n"
 /usr/bin/expect -c '
 set timeout 2
 
@@ -43,17 +49,18 @@ expect "Reload privilege tables now? \[Y/n\] "
 send "Y\r" '
 
 mysql -uroot -p"$mysql_root_password" -e "create database paypal_pizza_app;"
-
 mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_app.* to paypal_user@localhost identified by '$mysql_paypaluser_password';"
-
 mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
 
+printf "Setting MySQL login details within app config\n"
 sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/rest-api-sample-app-php/app/bootstrap.php
 
-printf Setting firewall rules:\n
+printf "Setting firewall rules\n"
+printf "allow http traffic: "
 firewall-cmd --zone=public --add-service=http --permanent
+printf "allow https traffic: "
 firewall-cmd --zone=public --add-service=https --permanent
-printf Reloading firewall:
+printf "Reloading firewall: "
 firewall-cmd --reload
 
 printf "mysql root password is: $mysql_root_password\n"
