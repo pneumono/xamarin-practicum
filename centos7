@@ -1,4 +1,4 @@
-yum install php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
+yum install -y php php-openssl php-mysql php-curl httpd mariadb mariadb-server git expect
 
 systemctl enable mariadb.service
 systemctl start mariadb.service
