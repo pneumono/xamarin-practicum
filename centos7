@@ -4,6 +4,8 @@ run_directory=$(pwd)
 
 systemctl enable mariadb.service
 systemctl start mariadb.service
+systemctl enable httpd.service
+systemctl start httpd.service
 
 curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
@@ -50,3 +52,4 @@ mysql -uroot -p"$mysql_root_password" -e "grant all privileges on paypal_pizza_a
 mysql -uroot -p"$mysql_root_password" paypal_pizza_app < install/db.sql
 
 firewall-cmd --zone=public --add-service=http --permanent
+firewall-cmd --reload
