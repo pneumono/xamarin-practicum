@@ -65,7 +65,7 @@ elif [ -e /etc/issue ] && grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
 
   echo "mysql-server mysql-server/root_password select $mysql_root_password" | debconf-set-selections
   echo "mysql-server mysql-server/root_password_again select $mysql_root_password" | debconf-set-selections
-  apt-get install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect
+  apt-get install -y php5 php5-cli php5-mysql php5-curl apache2 mysql-server git expect firewalld
 
   curl -sS https://getcomposer.org/installer | php
   mv composer.phar /usr/local/bin/composer
@@ -83,15 +83,14 @@ elif [ -e /etc/issue ] && grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
 
   sed -i "s/'MYSQL_USERNAME', 'root'/'MYSQL_USERNAME', 'paypal_user'/; s/'MYSQL_PASSWORD', 'root'/'MYSQL_PASSWORD', '$mysql_paypaluser_password'/" /var/www/html/app/bootstrap.php
 
-  iptables -A INPUT -m icmp -p icmp --icmp-type any -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --dport 80 -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --dport 443 -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --src 10.0.0.0/8 --dport 22 -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --src 172.0.0.0/8 --dport 22 -j ACCEPT
-  iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
-  iptables -P INPUT DROP
-  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-  iptables-save
+  firewall-cmd --zone=public --add-service=http --permanent
+  firewall-cmd --zone=public --add-service=https --permanent
+  firewall-cmd --zone=public --remove-service=ssh --permanent
+  firewall-cmd --permanent --zone=trusted --add-source=10.0.0.0/8
+  firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/16
+  firewall-cmd --permanent --zone=trusted --add-source=172.0.0.0/8
+  firewall-cmd --permanent --zone=trusted --add-service ssh
+  firewall-cmd --reload
 
   printf "mysql root password is: $mysql_root_password\n"
 else
