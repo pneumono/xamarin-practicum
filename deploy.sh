@@ -90,6 +90,7 @@ elif [ -e /etc/issue ] && grep -q "Ubuntu 14.04.2 LTS" /etc/issue; then
   iptables -A INPUT -m tcp -p tcp --src 172.0.0.0/8 --dport 22 -j ACCEPT
   iptables -A INPUT -m tcp -p tcp --src 192.168.0.0/16 --dport 22 -j ACCEPT
   iptables -P INPUT DROP
+  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
   iptables-save
 
   printf "mysql root password is: $mysql_root_password\n"
